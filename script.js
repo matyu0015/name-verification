@@ -308,74 +308,73 @@ function compareNames() {
         const record2 = {
             fullName: normalizedFullName
         };
-            
-            // 追加項目のデータを取得
-            if (matchOptions.kana) {
-                if (file2Format === 'combined' && mapping.file2.kanaFullName !== undefined) {
-                    record2.kanaFullName = normalizeKana(row[mapping.file2.kanaFullName] || '');
-                } else if (file2Format === 'separated' && mapping.file2.kanaLastName !== undefined && mapping.file2.kanaFirstName !== undefined) {
-                    const kanaLastName = row[mapping.file2.kanaLastName] || '';
-                    const kanaFirstName = row[mapping.file2.kanaFirstName] || '';
-                    record2.kanaFullName = normalizeKana(kanaLastName + kanaFirstName);
-                }
+        
+        // 追加項目のデータを取得
+        if (matchOptions.kana) {
+            if (file2Format === 'combined' && mapping.file2.kanaFullName !== undefined) {
+                record2.kanaFullName = normalizeKana(row[mapping.file2.kanaFullName] || '');
+            } else if (file2Format === 'separated' && mapping.file2.kanaLastName !== undefined && mapping.file2.kanaFirstName !== undefined) {
+                const kanaLastName = row[mapping.file2.kanaLastName] || '';
+                const kanaFirstName = row[mapping.file2.kanaFirstName] || '';
+                record2.kanaFullName = normalizeKana(kanaLastName + kanaFirstName);
             }
-            if (matchOptions.school && mapping.file2.school !== undefined) {
-                record2.school = normalizeString(row[mapping.file2.school] || '');
-            }
-            if (matchOptions.birthdate && mapping.file2.birthdate !== undefined) {
-                record2.birthdate = normalizeBirthdate(row[mapping.file2.birthdate] || '');
-            }
-            if (matchOptions.mobile && mapping.file2.mobile !== undefined) {
-                record2.mobile = normalizePhone(row[mapping.file2.mobile] || '');
-            }
-            if (matchOptions.phone && mapping.file2.phone !== undefined) {
-                record2.phone = normalizePhone(row[mapping.file2.phone] || '');
-            }
-            
-            // 複合キーを作成して完全一致を検索
-            const key = createCompositeKey(normalizedFullName, record2, matchOptions);
-            const perfectMatch = file1Records.has(key);
-            let matchInfo = perfectMatch ? file1Records.get(key) : null;
-            let matchedFields = {};
-            let matchScore = 0;
-            
-            // 完全一致が見つからない場合、部分一致を検索
-            if (!perfectMatch && file1RecordsByName.has(normalizedFullName)) {
-                const candidates = file1RecordsByName.get(normalizedFullName);
-                let bestMatch = null;
-                let bestScore = 0;
-                
-                for (const candidate of candidates) {
-                    const fields = getMatchedFields(record2, candidate, matchOptions);
-                    const score = calculateMatchScore(fields, matchOptions);
-                    
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMatch = candidate;
-                        matchedFields = fields;
-                    }
-                }
-                
-                if (bestMatch) {
-                    matchInfo = bestMatch;
-                    matchScore = bestScore;
-                }
-            } else if (perfectMatch) {
-                matchedFields = getMatchedFields(record2, matchInfo, matchOptions);
-                matchScore = calculateMatchScore(matchedFields, matchOptions);
-            }
-            
-            results.push({
-                name: fullName,
-                found: perfectMatch,
-                partialMatch: !perfectMatch && matchInfo !== null,
-                matchInfo: matchInfo,
-                row: i + 1,
-                record2: record2,
-                matchedFields: matchedFields,
-                matchScore: matchScore
-            });
         }
+        if (matchOptions.school && mapping.file2.school !== undefined) {
+            record2.school = normalizeString(row[mapping.file2.school] || '');
+        }
+        if (matchOptions.birthdate && mapping.file2.birthdate !== undefined) {
+            record2.birthdate = normalizeBirthdate(row[mapping.file2.birthdate] || '');
+        }
+        if (matchOptions.mobile && mapping.file2.mobile !== undefined) {
+            record2.mobile = normalizePhone(row[mapping.file2.mobile] || '');
+        }
+        if (matchOptions.phone && mapping.file2.phone !== undefined) {
+            record2.phone = normalizePhone(row[mapping.file2.phone] || '');
+        }
+        
+        // 複合キーを作成して完全一致を検索
+        const key = createCompositeKey(normalizedFullName, record2, matchOptions);
+        const perfectMatch = file1Records.has(key);
+        let matchInfo = perfectMatch ? file1Records.get(key) : null;
+        let matchedFields = {};
+        let matchScore = 0;
+        
+        // 完全一致が見つからない場合、部分一致を検索
+        if (!perfectMatch && file1RecordsByName.has(normalizedFullName)) {
+            const candidates = file1RecordsByName.get(normalizedFullName);
+            let bestMatch = null;
+            let bestScore = 0;
+            
+            for (const candidate of candidates) {
+                const fields = getMatchedFields(record2, candidate, matchOptions);
+                const score = calculateMatchScore(fields, matchOptions);
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = candidate;
+                    matchedFields = fields;
+                }
+            }
+            
+            if (bestMatch) {
+                matchInfo = bestMatch;
+                matchScore = bestScore;
+            }
+        } else if (perfectMatch) {
+            matchedFields = getMatchedFields(record2, matchInfo, matchOptions);
+            matchScore = calculateMatchScore(matchedFields, matchOptions);
+        }
+        
+        results.push({
+            name: fullName,
+            found: perfectMatch,
+            partialMatch: !perfectMatch && matchInfo !== null,
+            matchInfo: matchInfo,
+            row: i + 1,
+            record2: record2,
+            matchedFields: matchedFields,
+            matchScore: matchScore
+        });
     }
     
     displayResults(results, matchOptions);

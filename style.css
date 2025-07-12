@@ -231,6 +231,11 @@ input[type="file"]:hover {
     font-weight: bold;
 }
 
+.summary .partial {
+    color: #f39c12;
+    font-weight: bold;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -260,18 +265,89 @@ tbody tr:hover {
     background-color: #d4edda;
 }
 
+.partial-high-row {
+    background-color: #fff3cd;
+}
+
+.partial-medium-row {
+    background-color: #ffe5b4;
+}
+
+.partial-low-row {
+    background-color: #ffe0cc;
+}
+
 .not-found-row {
     background-color: #f8d7da;
 }
 
-.found-row td:nth-child(3) {
-    color: #155724;
+.result-icon {
+    font-size: 1.2em;
     font-weight: bold;
 }
 
-.not-found-row td:nth-child(3) {
+.result-icon.perfect {
+    color: #155724;
+}
+
+.result-icon.partial {
+    color: #856404;
+}
+
+.result-icon.none {
     color: #721c24;
+}
+
+.match-score {
+    position: relative;
+    width: 100px;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.score-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.match-score.high .score-bar {
+    background-color: #28a745;
+}
+
+.match-score.medium .score-bar {
+    background-color: #ffc107;
+}
+
+.match-score.low .score-bar {
+    background-color: #fd7e14;
+}
+
+.score-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 20px;
+    font-size: 0.85em;
     font-weight: bold;
+    color: #333;
+    z-index: 1;
+}
+
+.field-match {
+    color: #155724;
+    font-weight: 600;
+}
+
+.field-nomatch {
+    color: #721c24;
+    font-weight: 600;
 }
 
 @media (max-width: 768px) {

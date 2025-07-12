@@ -174,7 +174,9 @@ function compareNames() {
         phone: document.getElementById('matchPhone').checked
     };
     
-    // ファイル1からレコードのマップを作成
+    // ファイル1からレコードのマップを作成（完全一致用と部分一致用）
+    const file1RecordsByName = new Map(); // 名前のみでの検索用
+    
     for (let i = 1; i < file1Data.length; i++) { // ヘッダー行をスキップ
         const row = file1Data[i];
         if (row.length > mapping.file1.firstName) {
@@ -201,9 +203,15 @@ function compareNames() {
                     record.phone = normalizePhone(row[mapping.file1.phone] || '');
                 }
                 
-                // 複合キーを作成
+                // 複合キーを作成（完全一致用）
                 const key = createCompositeKey(fullName, record, matchOptions);
                 file1Records.set(key, record);
+                
+                // 名前のみでも検索できるように保存
+                if (!file1RecordsByName.has(fullName)) {
+                    file1RecordsByName.set(fullName, []);
+                }
+                file1RecordsByName.get(fullName).push(record);
             }
         }
     }
@@ -233,18 +241,48 @@ function compareNames() {
                 record2.phone = normalizePhone(row[mapping.file2.phone] || '');
             }
             
-            // 複合キーを作成して検索
+            // 複合キーを作成して完全一致を検索
             const key = createCompositeKey(normalizedFullName, record2, matchOptions);
-            const found = file1Records.has(key);
-            const matchInfo = found ? file1Records.get(key) : null;
+            const perfectMatch = file1Records.has(key);
+            let matchInfo = perfectMatch ? file1Records.get(key) : null;
+            let matchedFields = {};
+            let matchScore = 0;
+            
+            // 完全一致が見つからない場合、部分一致を検索
+            if (!perfectMatch && file1RecordsByName.has(normalizedFullName)) {
+                const candidates = file1RecordsByName.get(normalizedFullName);
+                let bestMatch = null;
+                let bestScore = 0;
+                
+                for (const candidate of candidates) {
+                    const fields = getMatchedFields(record2, candidate, matchOptions);
+                    const score = calculateMatchScore(fields, matchOptions);
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMatch = candidate;
+                        matchedFields = fields;
+                    }
+                }
+                
+                if (bestMatch) {
+                    matchInfo = bestMatch;
+                    matchScore = bestScore;
+                }
+            } else if (perfectMatch) {
+                matchedFields = getMatchedFields(record2, matchInfo, matchOptions);
+                matchScore = calculateMatchScore(matchedFields, matchOptions);
+            }
             
             results.push({
                 name: fullName,
-                found: found,
+                found: perfectMatch,
+                partialMatch: !perfectMatch && matchInfo !== null,
                 matchInfo: matchInfo,
                 row: i + 1,
                 record2: record2,
-                matchedFields: getMatchedFields(record2, matchInfo, matchOptions)
+                matchedFields: matchedFields,
+                matchScore: matchScore
             });
         }
     }
@@ -284,6 +322,30 @@ function getMatchedFields(record2, matchInfo, matchOptions) {
     return matched;
 }
 
+function calculateMatchScore(matchedFields, matchOptions) {
+    let totalFields = 1; // 名前は必須
+    let matchedCount = matchedFields.name ? 1 : 0;
+    
+    if (matchOptions.school) {
+        totalFields++;
+        if (matchedFields.school) matchedCount++;
+    }
+    if (matchOptions.birthdate) {
+        totalFields++;
+        if (matchedFields.birthdate) matchedCount++;
+    }
+    if (matchOptions.mobile) {
+        totalFields++;
+        if (matchedFields.mobile) matchedCount++;
+    }
+    if (matchOptions.phone) {
+        totalFields++;
+        if (matchedFields.phone) matchedCount++;
+    }
+    
+    return (matchedCount / totalFields) * 100;
+}
+
 function displayResults(results, matchOptions) {
     const resultsDiv = document.getElementById('results');
     
@@ -291,10 +353,12 @@ function displayResults(results, matchOptions) {
     html += '<div class="summary">';
     
     const foundCount = results.filter(r => r.found).length;
-    const notFoundCount = results.filter(r => !r.found).length;
+    const partialCount = results.filter(r => r.partialMatch).length;
+    const notFoundCount = results.filter(r => !r.found && !r.partialMatch).length;
     
     html += `<p>照合完了: 全${results.length}件</p>`;
-    html += `<p class="found">見つかった: ${foundCount}件</p>`;
+    html += `<p class="found">完全一致: ${foundCount}件</p>`;
+    html += `<p class="partial">部分一致: ${partialCount}件</p>`;
     html += `<p class="not-found">見つからなかった: ${notFoundCount}件</p>`;
     
     // 照合条件の表示
@@ -312,34 +376,89 @@ function displayResults(results, matchOptions) {
     html += '<th>ファイル②の名前</th>';
     html += '<th>行番号</th>';
     html += '<th>結果</th>';
+    html += '<th>一致度</th>';
     html += '<th>照合詳細</th>';
     html += '<th>ファイル①での位置</th>';
     html += '</tr></thead>';
     html += '<tbody>';
     
     results.forEach(result => {
-        const rowClass = result.found ? 'found-row' : 'not-found-row';
+        let rowClass = 'not-found-row';
+        if (result.found) {
+            rowClass = 'found-row';
+        } else if (result.partialMatch) {
+            // 一致度に応じてクラスを変更
+            if (result.matchScore >= 75) {
+                rowClass = 'partial-high-row';
+            } else if (result.matchScore >= 50) {
+                rowClass = 'partial-medium-row';
+            } else {
+                rowClass = 'partial-low-row';
+            }
+        }
+        
         html += `<tr class="${rowClass}">`;
         html += `<td>${result.name}</td>`;
         html += `<td>${result.row}</td>`;
-        html += `<td>${result.found ? '○' : '×'}</td>`;
+        
+        // 結果列
+        html += '<td>';
+        if (result.found) {
+            html += '<span class="result-icon perfect">◎</span>';
+        } else if (result.partialMatch) {
+            html += '<span class="result-icon partial">△</span>';
+        } else {
+            html += '<span class="result-icon none">×</span>';
+        }
+        html += '</td>';
+        
+        // 一致度
+        html += '<td>';
+        if (result.found || result.partialMatch) {
+            const scoreClass = result.matchScore >= 75 ? 'high' : result.matchScore >= 50 ? 'medium' : 'low';
+            html += `<div class="match-score ${scoreClass}">`;
+            html += `<div class="score-bar" style="width: ${result.matchScore}%"></div>`;
+            html += `<span class="score-text">${Math.round(result.matchScore)}%</span>`;
+            html += '</div>';
+        } else {
+            html += '-';
+        }
+        html += '</td>';
         
         // 照合詳細
         html += '<td>';
-        if (result.found) {
+        if (result.found || result.partialMatch) {
             const details = [];
-            if (result.matchedFields.name) details.push('氏名: ○');
-            if (matchOptions.school) details.push(`学校名: ${result.matchedFields.school ? '○' : '×'}`);
-            if (matchOptions.birthdate) details.push(`生年月日: ${result.matchedFields.birthdate ? '○' : '×'}`);
-            if (matchOptions.mobile) details.push(`携帯: ${result.matchedFields.mobile ? '○' : '×'}`);
-            if (matchOptions.phone) details.push(`固定: ${result.matchedFields.phone ? '○' : '×'}`);
+            if (result.matchedFields.name) {
+                details.push('<span class="field-match">氏名: ○</span>');
+            }
+            if (matchOptions.school) {
+                details.push(result.matchedFields.school ? 
+                    '<span class="field-match">学校名: ○</span>' : 
+                    '<span class="field-nomatch">学校名: ×</span>');
+            }
+            if (matchOptions.birthdate) {
+                details.push(result.matchedFields.birthdate ? 
+                    '<span class="field-match">生年月日: ○</span>' : 
+                    '<span class="field-nomatch">生年月日: ×</span>');
+            }
+            if (matchOptions.mobile) {
+                details.push(result.matchedFields.mobile ? 
+                    '<span class="field-match">携帯: ○</span>' : 
+                    '<span class="field-nomatch">携帯: ×</span>');
+            }
+            if (matchOptions.phone) {
+                details.push(result.matchedFields.phone ? 
+                    '<span class="field-match">固定: ○</span>' : 
+                    '<span class="field-nomatch">固定: ×</span>');
+            }
             html += details.join(' / ');
         } else {
             html += '-';
         }
         html += '</td>';
         
-        html += `<td>${result.found ? `${result.matchInfo.row}行目（${result.matchInfo.lastName} ${result.matchInfo.firstName}）` : '-'}</td>`;
+        html += `<td>${result.matchInfo ? `${result.matchInfo.row}行目（${result.matchInfo.lastName} ${result.matchInfo.firstName}）` : '-'}</td>`;
         html += '</tr>';
     });
     

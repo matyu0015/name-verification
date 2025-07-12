@@ -10,8 +10,13 @@ document.getElementById('file2').addEventListener('change', handleFile2);
 document.getElementById('compareBtn').addEventListener('click', compareNames);
 
 // チェックボックスのイベントリスナー
-['matchSchool', 'matchBirthdate', 'matchMobile', 'matchPhone'].forEach(id => {
+['matchKana', 'matchSchool', 'matchBirthdate', 'matchMobile', 'matchPhone'].forEach(id => {
     document.getElementById(id).addEventListener('change', updateColumnMapping);
+});
+
+// ラジオボタンのイベントリスナー
+document.querySelectorAll('input[name="file2Format"]').forEach(radio => {
+    radio.addEventListener('change', updateColumnMapping);
 });
 
 function handleFile1(e) {
@@ -54,6 +59,7 @@ function checkFilesLoaded() {
 
 function updateColumnMapping() {
     const needsMapping = 
+        document.getElementById('matchKana').checked ||
         document.getElementById('matchSchool').checked ||
         document.getElementById('matchBirthdate').checked ||
         document.getElementById('matchMobile').checked ||
@@ -71,6 +77,10 @@ function updateColumnMapping() {
         html += '<label>姓の列: <input type="number" id="file1LastName" value="1" min="1"></label>';
         html += '<label>名の列: <input type="number" id="file1FirstName" value="2" min="1"></label>';
         
+        if (document.getElementById('matchKana').checked) {
+            html += '<label>カナ姓の列: <input type="number" id="file1KanaLastName" min="1"></label>';
+            html += '<label>カナ名の列: <input type="number" id="file1KanaFirstName" min="1"></label>';
+        }
         if (document.getElementById('matchSchool').checked) {
             html += '<label>学校名の列: <input type="number" id="file1School" min="1"></label>';
         }
@@ -89,8 +99,23 @@ function updateColumnMapping() {
         html += '<div class="mapping-section">';
         html += '<h4>ファイル②の列番号</h4>';
         html += '<div class="mapping-grid">';
-        html += '<label>姓名の列: <input type="number" id="file2FullName" value="1" min="1"></label>';
         
+        const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
+        if (file2Format === 'combined') {
+            html += '<label>姓名の列: <input type="number" id="file2FullName" value="1" min="1"></label>';
+        } else {
+            html += '<label>姓の列: <input type="number" id="file2LastName" value="1" min="1"></label>';
+            html += '<label>名の列: <input type="number" id="file2FirstName" value="2" min="1"></label>';
+        }
+        
+        if (document.getElementById('matchKana').checked) {
+            if (file2Format === 'combined') {
+                html += '<label>カナ姓名の列: <input type="number" id="file2KanaFullName" min="1"></label>';
+            } else {
+                html += '<label>カナ姓の列: <input type="number" id="file2KanaLastName" min="1"></label>';
+                html += '<label>カナ名の列: <input type="number" id="file2KanaFirstName" min="1"></label>';
+            }
+        }
         if (document.getElementById('matchSchool').checked) {
             html += '<label>学校名の列: <input type="number" id="file2School" min="1"></label>';
         }
@@ -113,16 +138,34 @@ function updateColumnMapping() {
 }
 
 function getColumnMappings() {
+    const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
+    
     const mapping = {
         file1: {
             lastName: parseInt(document.getElementById('file1LastName')?.value || 1) - 1,
             firstName: parseInt(document.getElementById('file1FirstName')?.value || 2) - 1
         },
-        file2: {
-            fullName: parseInt(document.getElementById('file2FullName')?.value || 1) - 1
-        }
+        file2: {}
     };
     
+    if (file2Format === 'combined') {
+        mapping.file2.fullName = parseInt(document.getElementById('file2FullName')?.value || 1) - 1;
+    } else {
+        mapping.file2.lastName = parseInt(document.getElementById('file2LastName')?.value || 1) - 1;
+        mapping.file2.firstName = parseInt(document.getElementById('file2FirstName')?.value || 2) - 1;
+    }
+    
+    if (document.getElementById('matchKana').checked) {
+        mapping.file1.kanaLastName = parseInt(document.getElementById('file1KanaLastName')?.value || 3) - 1;
+        mapping.file1.kanaFirstName = parseInt(document.getElementById('file1KanaFirstName')?.value || 4) - 1;
+        
+        if (file2Format === 'combined') {
+            mapping.file2.kanaFullName = parseInt(document.getElementById('file2KanaFullName')?.value || 2) - 1;
+        } else {
+            mapping.file2.kanaLastName = parseInt(document.getElementById('file2KanaLastName')?.value || 3) - 1;
+            mapping.file2.kanaFirstName = parseInt(document.getElementById('file2KanaFirstName')?.value || 4) - 1;
+        }
+    }
     if (document.getElementById('matchSchool').checked) {
         mapping.file1.school = parseInt(document.getElementById('file1School').value) - 1;
         mapping.file2.school = parseInt(document.getElementById('file2School').value) - 1;
@@ -148,6 +191,16 @@ function normalizeString(str) {
     return str.toString().trim().replace(/\s+/g, '').toLowerCase();
 }
 
+function normalizeKana(str) {
+    if (!str) return '';
+    // カタカナをヒラガナに統一して正規化
+    return str.toString().trim().replace(/\s+/g, '').toLowerCase()
+        .replace(/[ァ-ヶ]/g, function(match) {
+            const chr = match.charCodeAt(0) - 0x60;
+            return String.fromCharCode(chr);
+        });
+}
+
 function normalizePhone(phone) {
     if (!phone) return '';
     return phone.toString().replace(/[-\s()]/g, '');
@@ -168,11 +221,14 @@ function compareNames() {
     
     // 選択された照合項目を取得
     const matchOptions = {
+        kana: document.getElementById('matchKana').checked,
         school: document.getElementById('matchSchool').checked,
         birthdate: document.getElementById('matchBirthdate').checked,
         mobile: document.getElementById('matchMobile').checked,
         phone: document.getElementById('matchPhone').checked
     };
+    
+    const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
     
     // ファイル1からレコードのマップを作成（完全一致用と部分一致用）
     const file1RecordsByName = new Map(); // 名前のみでの検索用
@@ -190,6 +246,11 @@ function compareNames() {
             const fullName = normalizeString(record.lastName + record.firstName);
             if (fullName) {
                 // 追加項目のデータを取得
+                if (matchOptions.kana && mapping.file1.kanaLastName !== undefined && mapping.file1.kanaFirstName !== undefined) {
+                    record.kanaLastName = row[mapping.file1.kanaLastName] || '';
+                    record.kanaFirstName = row[mapping.file1.kanaFirstName] || '';
+                    record.kanaFullName = normalizeKana(record.kanaLastName + record.kanaFirstName);
+                }
                 if (matchOptions.school && mapping.file1.school !== undefined) {
                     record.school = normalizeString(row[mapping.file1.school] || '');
                 }
@@ -219,15 +280,40 @@ function compareNames() {
     // ファイル2の各レコードを確認
     for (let i = 1; i < file2Data.length; i++) { // ヘッダー行をスキップ
         const row = file2Data[i];
-        if (row.length > mapping.file2.fullName && row[mapping.file2.fullName]) {
-            const fullName = row[mapping.file2.fullName].toString();
-            const normalizedFullName = normalizeString(fullName);
-            
-            const record2 = {
-                fullName: normalizedFullName
-            };
+        let fullName, normalizedFullName;
+        
+        if (file2Format === 'combined') {
+            if (row.length > mapping.file2.fullName && row[mapping.file2.fullName]) {
+                fullName = row[mapping.file2.fullName].toString();
+                normalizedFullName = normalizeString(fullName);
+            } else {
+                continue;
+            }
+        } else {
+            if (row.length > mapping.file2.firstName) {
+                const lastName = row[mapping.file2.lastName] || '';
+                const firstName = row[mapping.file2.firstName] || '';
+                fullName = lastName + ' ' + firstName;
+                normalizedFullName = normalizeString(lastName + firstName);
+            } else {
+                continue;
+            }
+        }
+        
+        const record2 = {
+            fullName: normalizedFullName
+        };
             
             // 追加項目のデータを取得
+            if (matchOptions.kana) {
+                if (file2Format === 'combined' && mapping.file2.kanaFullName !== undefined) {
+                    record2.kanaFullName = normalizeKana(row[mapping.file2.kanaFullName] || '');
+                } else if (file2Format === 'separated' && mapping.file2.kanaLastName !== undefined && mapping.file2.kanaFirstName !== undefined) {
+                    const kanaLastName = row[mapping.file2.kanaLastName] || '';
+                    const kanaFirstName = row[mapping.file2.kanaFirstName] || '';
+                    record2.kanaFullName = normalizeKana(kanaLastName + kanaFirstName);
+                }
+            }
             if (matchOptions.school && mapping.file2.school !== undefined) {
                 record2.school = normalizeString(row[mapping.file2.school] || '');
             }
@@ -292,6 +378,7 @@ function compareNames() {
 
 function createCompositeKey(name, record, matchOptions) {
     let key = name;
+    if (matchOptions.kana && record.kanaFullName) key += '|' + record.kanaFullName;
     if (matchOptions.school && record.school) key += '|' + record.school;
     if (matchOptions.birthdate && record.birthdate) key += '|' + record.birthdate;
     if (matchOptions.mobile && record.mobile) key += '|' + record.mobile;
@@ -306,6 +393,9 @@ function getMatchedFields(record2, matchInfo, matchOptions) {
         name: true // 名前は常に一致している
     };
     
+    if (matchOptions.kana) {
+        matched.kana = record2.kanaFullName === matchInfo.kanaFullName;
+    }
     if (matchOptions.school) {
         matched.school = record2.school === matchInfo.school;
     }
@@ -326,6 +416,10 @@ function calculateMatchScore(matchedFields, matchOptions) {
     let totalFields = 1; // 名前は必須
     let matchedCount = matchedFields.name ? 1 : 0;
     
+    if (matchOptions.kana) {
+        totalFields++;
+        if (matchedFields.kana) matchedCount++;
+    }
     if (matchOptions.school) {
         totalFields++;
         if (matchedFields.school) matchedCount++;
@@ -363,6 +457,7 @@ function displayResults(results, matchOptions) {
     
     // 照合条件の表示
     const conditions = ['氏名（必須）'];
+    if (matchOptions.kana) conditions.push('カナ氏名');
     if (matchOptions.school) conditions.push('学校名');
     if (matchOptions.birthdate) conditions.push('生年月日');
     if (matchOptions.mobile) conditions.push('携帯番号');
@@ -431,6 +526,11 @@ function displayResults(results, matchOptions) {
             const details = [];
             if (result.matchedFields.name) {
                 details.push('<span class="field-match">氏名: ○</span>');
+            }
+            if (matchOptions.kana) {
+                details.push(result.matchedFields.kana ? 
+                    '<span class="field-match">カナ: ○</span>' : 
+                    '<span class="field-nomatch">カナ: ×</span>');
             }
             if (matchOptions.school) {
                 details.push(result.matchedFields.school ? 

@@ -367,3 +367,39 @@ tbody tr:hover {
         padding: 8px;
     }
 }
+
+.name-format-selection {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.format-label {
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.radio-label {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 20px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.radio-label:hover {
+    background-color: #e9ecef;
+}
+
+.radio-label input[type="radio"] {
+    margin-right: 6px;
+}
+
+.radio-label span {
+    font-size: 0.95em;
+    color: #333;
+}

@@ -19,9 +19,19 @@
             </div>
             
             <div class="file-input-wrapper">
-                <h2>②姓名が一つのExcelファイル</h2>
+                <h2>②照合対象のExcelファイル</h2>
                 <input type="file" id="file2" accept=".xlsx,.xls" />
-                <p class="file-info">姓名が一つのセルに記載されているファイル</p>
+                <div class="name-format-selection">
+                    <p class="format-label">姓名の記載形式：</p>
+                    <label class="radio-label">
+                        <input type="radio" name="file2Format" value="combined" checked>
+                        <span>姓名が1つのセル</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="file2Format" value="separated">
+                        <span>姓と名が別々のセル</span>
+                    </label>
+                </div>
             </div>
         </div>
         
@@ -31,6 +41,10 @@
                 <label>
                     <input type="checkbox" id="matchName" checked disabled>
                     <span>氏名（必須）</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="matchKana">
+                    <span>カナ氏名</span>
                 </label>
                 <label>
                     <input type="checkbox" id="matchSchool">

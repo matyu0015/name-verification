@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>名前照合システム</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>名前照合システム</h1>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <h2>①姓名が分かれたExcelファイル</h2>
+                <input type="file" id="file1" accept=".xlsx,.xls" />
+                <p class="file-info">姓と名が別々のセルに記載されているファイル</p>
+            </div>
+            
+            <div class="file-input-wrapper">
+                <h2>②姓名が一つのExcelファイル</h2>
+                <input type="file" id="file2" accept=".xlsx,.xls" />
+                <p class="file-info">姓名が一つのセルに記載されているファイル</p>
+            </div>
+        </div>
+        
+        <button id="compareBtn" disabled>照合開始</button>
+        
+        <div id="results" class="results-section"></div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

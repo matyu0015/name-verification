@@ -5,12 +5,32 @@ let columnMapping = {
     file2: { fullName: 0 }
 };
 
+// 列番号をアルファベットに変換
+function numberToColumn(num) {
+    let column = '';
+    while (num > 0) {
+        let remainder = (num - 1) % 26;
+        column = String.fromCharCode(65 + remainder) + column;
+        num = Math.floor((num - 1) / 26);
+    }
+    return column;
+}
+
+// アルファベットを列番号に変換
+function columnToNumber(column) {
+    let num = 0;
+    for (let i = 0; i < column.length; i++) {
+        num = num * 26 + (column.charCodeAt(i) - 64);
+    }
+    return num;
+}
+
 document.getElementById('file1').addEventListener('change', handleFile1);
 document.getElementById('file2').addEventListener('change', handleFile2);
 document.getElementById('compareBtn').addEventListener('click', compareNames);
 
 // チェックボックスのイベントリスナー
-['matchKana', 'matchSchool', 'matchBirthdate', 'matchMobile', 'matchPhone'].forEach(id => {
+['matchKana', 'matchSchool', 'matchBirthdate', 'matchMobile', 'matchEmail'].forEach(id => {
     document.getElementById(id).addEventListener('change', updateColumnMapping);
 });
 
@@ -63,7 +83,7 @@ function updateColumnMapping() {
             document.getElementById('matchSchool').checked ||
             document.getElementById('matchBirthdate').checked ||
             document.getElementById('matchMobile').checked ||
-            document.getElementById('matchPhone').checked;
+            document.getElementById('matchEmail').checked;
         
         const mappingDiv = document.getElementById('columnMapping');
         const mappingInputs = document.getElementById('mappingInputs');
@@ -74,61 +94,61 @@ function updateColumnMapping() {
         mappingDiv.style.display = 'block';
         
         let html = '<div class="mapping-section">';
-        html += '<h4>ファイル①の列番号（A=1, B=2, C=3...）</h4>';
+        html += '<h4>ファイル①の列を指定（A, B, C...）</h4>';
         html += '<div class="mapping-grid">';
-        html += '<label>姓の列: <input type="number" id="file1LastName" value="1" min="1"></label>';
-        html += '<label>名の列: <input type="number" id="file1FirstName" value="2" min="1"></label>';
+        html += '<label>姓の列 (例: A): <input type="text" id="file1LastName" value="A" placeholder="A"></label>';
+        html += '<label>名の列 (例: B): <input type="text" id="file1FirstName" value="B" placeholder="B"></label>';
         
         if (document.getElementById('matchKana').checked) {
-            html += '<label>カナ姓の列: <input type="number" id="file1KanaLastName" min="1"></label>';
-            html += '<label>カナ名の列: <input type="number" id="file1KanaFirstName" min="1"></label>';
+            html += '<label>カナ姓の列 (例: C): <input type="text" id="file1KanaLastName" placeholder="C"></label>';
+            html += '<label>カナ名の列 (例: D): <input type="text" id="file1KanaFirstName" placeholder="D"></label>';
         }
         if (document.getElementById('matchSchool').checked) {
-            html += '<label>学校名の列: <input type="number" id="file1School" min="1"></label>';
+            html += '<label>学校名の列 (例: E): <input type="text" id="file1School" placeholder="E"></label>';
         }
         if (document.getElementById('matchBirthdate').checked) {
-            html += '<label>生年月日の列: <input type="number" id="file1Birthdate" min="1"></label>';
+            html += '<label>生年月日の列 (例: F): <input type="text" id="file1Birthdate" placeholder="F"></label>';
         }
         if (document.getElementById('matchMobile').checked) {
-            html += '<label>携帯番号の列: <input type="number" id="file1Mobile" min="1"></label>';
+            html += '<label>携帯番号の列 (例: G): <input type="text" id="file1Mobile" placeholder="G"></label>';
         }
-        if (document.getElementById('matchPhone').checked) {
-            html += '<label>固定番号の列: <input type="number" id="file1Phone" min="1"></label>';
+        if (document.getElementById('matchEmail').checked) {
+            html += '<label>メールアドレスの列 (例: H): <input type="text" id="file1Email" placeholder="H"></label>';
         }
         
         html += '</div></div>';
         
         html += '<div class="mapping-section">';
-        html += '<h4>ファイル②の列番号</h4>';
+        html += '<h4>ファイル②の列を指定（A, B, C...）</h4>';
         html += '<div class="mapping-grid">';
         
         const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
         if (file2Format === 'combined') {
-            html += '<label>姓名の列: <input type="number" id="file2FullName" value="1" min="1"></label>';
+            html += '<label>姓名の列 (例: A): <input type="text" id="file2FullName" value="A" placeholder="A"></label>';
         } else {
-            html += '<label>姓の列: <input type="number" id="file2LastName" value="1" min="1"></label>';
-            html += '<label>名の列: <input type="number" id="file2FirstName" value="2" min="1"></label>';
+            html += '<label>姓の列 (例: A): <input type="text" id="file2LastName" value="A" placeholder="A"></label>';
+            html += '<label>名の列 (例: B): <input type="text" id="file2FirstName" value="B" placeholder="B"></label>';
         }
         
         if (document.getElementById('matchKana').checked) {
             if (file2Format === 'combined') {
-                html += '<label>カナ姓名の列: <input type="number" id="file2KanaFullName" min="1"></label>';
+                html += '<label>カナ姓名の列 (例: B): <input type="text" id="file2KanaFullName" placeholder="B"></label>';
             } else {
-                html += '<label>カナ姓の列: <input type="number" id="file2KanaLastName" min="1"></label>';
-                html += '<label>カナ名の列: <input type="number" id="file2KanaFirstName" min="1"></label>';
+                html += '<label>カナ姓の列 (例: C): <input type="text" id="file2KanaLastName" placeholder="C"></label>';
+                html += '<label>カナ名の列 (例: D): <input type="text" id="file2KanaFirstName" placeholder="D"></label>';
             }
         }
         if (document.getElementById('matchSchool').checked) {
-            html += '<label>学校名の列: <input type="number" id="file2School" min="1"></label>';
+            html += '<label>学校名の列 (例: E): <input type="text" id="file2School" placeholder="E"></label>';
         }
         if (document.getElementById('matchBirthdate').checked) {
-            html += '<label>生年月日の列: <input type="number" id="file2Birthdate" min="1"></label>';
+            html += '<label>生年月日の列 (例: F): <input type="text" id="file2Birthdate" placeholder="F"></label>';
         }
         if (document.getElementById('matchMobile').checked) {
-            html += '<label>携帯番号の列: <input type="number" id="file2Mobile" min="1"></label>';
+            html += '<label>携帯番号の列 (例: G): <input type="text" id="file2Mobile" placeholder="G"></label>';
         }
-        if (document.getElementById('matchPhone').checked) {
-            html += '<label>固定番号の列: <input type="number" id="file2Phone" min="1"></label>';
+        if (document.getElementById('matchEmail').checked) {
+            html += '<label>メールアドレスの列 (例: H): <input type="text" id="file2Email" placeholder="H"></label>';
         }
         
         html += '</div></div>';
@@ -147,45 +167,45 @@ function getColumnMappings() {
     
     const mapping = {
         file1: {
-            lastName: parseInt(document.getElementById('file1LastName')?.value || 1) - 1,
-            firstName: parseInt(document.getElementById('file1FirstName')?.value || 2) - 1
+            lastName: columnToNumber(document.getElementById('file1LastName')?.value || 'A') - 1,
+            firstName: columnToNumber(document.getElementById('file1FirstName')?.value || 'B') - 1
         },
         file2: {}
     };
     
     if (file2Format === 'combined') {
-        mapping.file2.fullName = parseInt(document.getElementById('file2FullName')?.value || 1) - 1;
+        mapping.file2.fullName = columnToNumber(document.getElementById('file2FullName')?.value || 'A') - 1;
     } else {
-        mapping.file2.lastName = parseInt(document.getElementById('file2LastName')?.value || 1) - 1;
-        mapping.file2.firstName = parseInt(document.getElementById('file2FirstName')?.value || 2) - 1;
+        mapping.file2.lastName = columnToNumber(document.getElementById('file2LastName')?.value || 'A') - 1;
+        mapping.file2.firstName = columnToNumber(document.getElementById('file2FirstName')?.value || 'B') - 1;
     }
     
     if (document.getElementById('matchKana').checked) {
-        mapping.file1.kanaLastName = parseInt(document.getElementById('file1KanaLastName')?.value || 3) - 1;
-        mapping.file1.kanaFirstName = parseInt(document.getElementById('file1KanaFirstName')?.value || 4) - 1;
+        mapping.file1.kanaLastName = columnToNumber(document.getElementById('file1KanaLastName')?.value || 'C') - 1;
+        mapping.file1.kanaFirstName = columnToNumber(document.getElementById('file1KanaFirstName')?.value || 'D') - 1;
         
         if (file2Format === 'combined') {
-            mapping.file2.kanaFullName = parseInt(document.getElementById('file2KanaFullName')?.value || 2) - 1;
+            mapping.file2.kanaFullName = columnToNumber(document.getElementById('file2KanaFullName')?.value || 'B') - 1;
         } else {
-            mapping.file2.kanaLastName = parseInt(document.getElementById('file2KanaLastName')?.value || 3) - 1;
-            mapping.file2.kanaFirstName = parseInt(document.getElementById('file2KanaFirstName')?.value || 4) - 1;
+            mapping.file2.kanaLastName = columnToNumber(document.getElementById('file2KanaLastName')?.value || 'C') - 1;
+            mapping.file2.kanaFirstName = columnToNumber(document.getElementById('file2KanaFirstName')?.value || 'D') - 1;
         }
     }
     if (document.getElementById('matchSchool').checked) {
-        mapping.file1.school = parseInt(document.getElementById('file1School').value) - 1;
-        mapping.file2.school = parseInt(document.getElementById('file2School').value) - 1;
+        mapping.file1.school = columnToNumber(document.getElementById('file1School').value) - 1;
+        mapping.file2.school = columnToNumber(document.getElementById('file2School').value) - 1;
     }
     if (document.getElementById('matchBirthdate').checked) {
-        mapping.file1.birthdate = parseInt(document.getElementById('file1Birthdate').value) - 1;
-        mapping.file2.birthdate = parseInt(document.getElementById('file2Birthdate').value) - 1;
+        mapping.file1.birthdate = columnToNumber(document.getElementById('file1Birthdate').value) - 1;
+        mapping.file2.birthdate = columnToNumber(document.getElementById('file2Birthdate').value) - 1;
     }
     if (document.getElementById('matchMobile').checked) {
-        mapping.file1.mobile = parseInt(document.getElementById('file1Mobile').value) - 1;
-        mapping.file2.mobile = parseInt(document.getElementById('file2Mobile').value) - 1;
+        mapping.file1.mobile = columnToNumber(document.getElementById('file1Mobile').value) - 1;
+        mapping.file2.mobile = columnToNumber(document.getElementById('file2Mobile').value) - 1;
     }
-    if (document.getElementById('matchPhone').checked) {
-        mapping.file1.phone = parseInt(document.getElementById('file1Phone').value) - 1;
-        mapping.file2.phone = parseInt(document.getElementById('file2Phone').value) - 1;
+    if (document.getElementById('matchEmail').checked) {
+        mapping.file1.email = columnToNumber(document.getElementById('file1Email').value) - 1;
+        mapping.file2.email = columnToNumber(document.getElementById('file2Email').value) - 1;
     }
     
     return mapping;
@@ -211,6 +231,11 @@ function normalizePhone(phone) {
     return phone.toString().replace(/[-\s()]/g, '');
 }
 
+function normalizeEmail(email) {
+    if (!email) return '';
+    return email.toString().trim().toLowerCase();
+}
+
 function normalizeBirthdate(date) {
     if (!date) return '';
     // 様々な日付形式に対応
@@ -230,7 +255,7 @@ function compareNames() {
         school: document.getElementById('matchSchool').checked,
         birthdate: document.getElementById('matchBirthdate').checked,
         mobile: document.getElementById('matchMobile').checked,
-        phone: document.getElementById('matchPhone').checked
+        email: document.getElementById('matchEmail').checked
     };
     
     const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
@@ -265,8 +290,8 @@ function compareNames() {
                 if (matchOptions.mobile && mapping.file1.mobile !== undefined) {
                     record.mobile = normalizePhone(row[mapping.file1.mobile] || '');
                 }
-                if (matchOptions.phone && mapping.file1.phone !== undefined) {
-                    record.phone = normalizePhone(row[mapping.file1.phone] || '');
+                if (matchOptions.email && mapping.file1.email !== undefined) {
+                    record.email = normalizeEmail(row[mapping.file1.email] || '');
                 }
                 
                 // 複合キーを作成（完全一致用）
@@ -328,8 +353,8 @@ function compareNames() {
         if (matchOptions.mobile && mapping.file2.mobile !== undefined) {
             record2.mobile = normalizePhone(row[mapping.file2.mobile] || '');
         }
-        if (matchOptions.phone && mapping.file2.phone !== undefined) {
-            record2.phone = normalizePhone(row[mapping.file2.phone] || '');
+        if (matchOptions.email && mapping.file2.email !== undefined) {
+            record2.email = normalizeEmail(row[mapping.file2.email] || '');
         }
         
         // 複合キーを作成して完全一致を検索
@@ -386,7 +411,7 @@ function createCompositeKey(name, record, matchOptions) {
     if (matchOptions.school && record.school) key += '|' + record.school;
     if (matchOptions.birthdate && record.birthdate) key += '|' + record.birthdate;
     if (matchOptions.mobile && record.mobile) key += '|' + record.mobile;
-    if (matchOptions.phone && record.phone) key += '|' + record.phone;
+    if (matchOptions.email && record.email) key += '|' + record.email;
     return key;
 }
 
@@ -409,8 +434,8 @@ function getMatchedFields(record2, matchInfo, matchOptions) {
     if (matchOptions.mobile) {
         matched.mobile = record2.mobile === matchInfo.mobile;
     }
-    if (matchOptions.phone) {
-        matched.phone = record2.phone === matchInfo.phone;
+    if (matchOptions.email) {
+        matched.email = record2.email === matchInfo.email;
     }
     
     return matched;
@@ -436,9 +461,9 @@ function calculateMatchScore(matchedFields, matchOptions) {
         totalFields++;
         if (matchedFields.mobile) matchedCount++;
     }
-    if (matchOptions.phone) {
+    if (matchOptions.email) {
         totalFields++;
-        if (matchedFields.phone) matchedCount++;
+        if (matchedFields.email) matchedCount++;
     }
     
     return (matchedCount / totalFields) * 100;
@@ -465,7 +490,7 @@ function displayResults(results, matchOptions) {
     if (matchOptions.school) conditions.push('学校名');
     if (matchOptions.birthdate) conditions.push('生年月日');
     if (matchOptions.mobile) conditions.push('携帯番号');
-    if (matchOptions.phone) conditions.push('固定番号');
+    if (matchOptions.email) conditions.push('メールアドレス');
     html += `<p>照合条件: ${conditions.join('、')}</p>`;
     
     html += '</div>';
@@ -551,10 +576,10 @@ function displayResults(results, matchOptions) {
                     '<span class="field-match">携帯: ○</span>' : 
                     '<span class="field-nomatch">携帯: ×</span>');
             }
-            if (matchOptions.phone) {
-                details.push(result.matchedFields.phone ? 
-                    '<span class="field-match">固定: ○</span>' : 
-                    '<span class="field-nomatch">固定: ×</span>');
+            if (matchOptions.email) {
+                details.push(result.matchedFields.email ? 
+                    '<span class="field-match">メール: ○</span>' : 
+                    '<span class="field-nomatch">メール: ×</span>');
             }
             html += details.join(' / ');
         } else {

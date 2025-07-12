@@ -25,6 +25,36 @@
             </div>
         </div>
         
+        <div class="match-options">
+            <h2>照合する項目を選択</h2>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="matchName" checked disabled>
+                    <span>氏名（必須）</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="matchSchool">
+                    <span>学校名</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="matchBirthdate">
+                    <span>生年月日</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="matchMobile">
+                    <span>携帯番号</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="matchPhone">
+                    <span>固定番号</span>
+                </label>
+            </div>
+            <div class="column-mapping" id="columnMapping" style="display: none;">
+                <h3>列の対応を指定してください</h3>
+                <div id="mappingInputs"></div>
+            </div>
+        </div>
+        
         <button id="compareBtn" disabled>照合開始</button>
         
         <div id="results" class="results-section"></div>

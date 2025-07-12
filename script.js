@@ -30,7 +30,6 @@ function handleFile1(e) {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         file1Data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
         checkFilesLoaded();
-        updateColumnMapping();
     };
     reader.readAsArrayBuffer(file);
 }
@@ -46,7 +45,6 @@ function handleFile2(e) {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         file2Data = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
         checkFilesLoaded();
-        updateColumnMapping();
     };
     reader.readAsArrayBuffer(file);
 }
@@ -54,19 +52,23 @@ function handleFile2(e) {
 function checkFilesLoaded() {
     if (file1Data && file2Data) {
         document.getElementById('compareBtn').disabled = false;
+        updateColumnMapping();
     }
 }
 
 function updateColumnMapping() {
-    const needsMapping = 
-        document.getElementById('matchKana').checked ||
-        document.getElementById('matchSchool').checked ||
-        document.getElementById('matchBirthdate').checked ||
-        document.getElementById('matchMobile').checked ||
-        document.getElementById('matchPhone').checked;
-    
-    const mappingDiv = document.getElementById('columnMapping');
-    const mappingInputs = document.getElementById('mappingInputs');
+    try {
+        const needsMapping = 
+            document.getElementById('matchKana').checked ||
+            document.getElementById('matchSchool').checked ||
+            document.getElementById('matchBirthdate').checked ||
+            document.getElementById('matchMobile').checked ||
+            document.getElementById('matchPhone').checked;
+        
+        const mappingDiv = document.getElementById('columnMapping');
+        const mappingInputs = document.getElementById('mappingInputs');
+        
+        if (!mappingDiv || !mappingInputs) return;
     
     if (needsMapping && file1Data && file2Data) {
         mappingDiv.style.display = 'block';
@@ -134,6 +136,9 @@ function updateColumnMapping() {
         mappingInputs.innerHTML = html;
     } else {
         mappingDiv.style.display = 'none';
+    }
+    } catch (error) {
+        console.error('Error in updateColumnMapping:', error);
     }
 }
 

@@ -4,6 +4,9 @@ let columnMapping = {
     file1: { lastName: 0, firstName: 1 },
     file2: { fullName: 0 }
 };
+let extractColumns = [];
+let lastResults = [];
+let lastValidExtractColumns = [];
 
 // 列番号をアルファベットに変換
 function numberToColumn(num) {
@@ -39,6 +42,59 @@ document.querySelectorAll('input[name="file2Format"]').forEach(radio => {
     radio.addEventListener('change', updateColumnMapping);
 });
 
+// 抽出列の追加ボタン
+document.getElementById('addExtractColumn').addEventListener('click', addExtractColumn);
+
+// 抽出列管理関数
+function initializeExtractColumns() {
+    extractColumns = [{ column: '', name: '' }];
+    renderExtractColumns();
+}
+
+function addExtractColumn() {
+    if (extractColumns.length < 5) {
+        extractColumns.push({ column: '', name: '' });
+        renderExtractColumns();
+    }
+}
+
+function removeExtractColumn(index) {
+    if (extractColumns.length > 1) {
+        extractColumns.splice(index, 1);
+        renderExtractColumns();
+    }
+}
+
+function renderExtractColumns() {
+    const container = document.getElementById('extractInputs');
+    container.innerHTML = extractColumns.map((col, index) => `
+        <div class="extract-item">
+            <label>ファイル①の列:</label>
+            <input type="text" 
+                   value="${col.column}" 
+                   placeholder="例: F" 
+                   maxlength="3"
+                   onchange="updateExtractColumn(${index}, 'column', this.value)">
+            <label>項目名:</label>
+            <input type="text" 
+                   class="column-name"
+                   value="${col.name}" 
+                   placeholder="例: 住所" 
+                   onchange="updateExtractColumn(${index}, 'name', this.value)">
+            ${extractColumns.length > 1 ? 
+                `<button type="button" onclick="removeExtractColumn(${index})">削除</button>` : 
+                ''}
+        </div>
+    `).join('');
+    
+    // 最大5列まで
+    document.getElementById('addExtractColumn').disabled = extractColumns.length >= 5;
+}
+
+function updateExtractColumn(index, field, value) {
+    extractColumns[index][field] = value;
+}
+
 function handleFile1(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -73,6 +129,9 @@ function checkFilesLoaded() {
     if (file1Data && file2Data) {
         document.getElementById('compareBtn').disabled = false;
         updateColumnMapping();
+        // 抽出列セクションを表示
+        document.getElementById('extractColumns').style.display = 'block';
+        initializeExtractColumns();
     }
 }
 
@@ -260,6 +319,11 @@ function compareNames() {
     
     const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
     
+    // 有効な抽出列を取得
+    const validExtractColumns = extractColumns.filter(col => 
+        col.column && col.name && columnToNumber(col.column) > 0
+    );
+    
     // ファイル1からレコードのマップを作成（完全一致用と部分一致用）
     const file1RecordsByName = new Map(); // 名前のみでの検索用
     
@@ -293,6 +357,15 @@ function compareNames() {
                 if (matchOptions.email && mapping.file1.email !== undefined) {
                     record.email = normalizeEmail(row[mapping.file1.email] || '');
                 }
+                
+                // 抽出列のデータを取得
+                record.extractData = {};
+                validExtractColumns.forEach(extractCol => {
+                    const colIndex = columnToNumber(extractCol.column) - 1;
+                    if (colIndex >= 0 && colIndex < row.length) {
+                        record.extractData[extractCol.name] = row[colIndex] || '';
+                    }
+                });
                 
                 // 複合キーを作成（完全一致用）
                 const key = createCompositeKey(fullName, record, matchOptions);
@@ -398,11 +471,12 @@ function compareNames() {
             row: i + 1,
             record2: record2,
             matchedFields: matchedFields,
-            matchScore: matchScore
+            matchScore: matchScore,
+            extractData: matchInfo ? matchInfo.extractData : {}
         });
     }
     
-    displayResults(results, matchOptions);
+    displayResults(results, matchOptions, validExtractColumns);
 }
 
 function createCompositeKey(name, record, matchOptions) {
@@ -469,7 +543,11 @@ function calculateMatchScore(matchedFields, matchOptions) {
     return (matchedCount / totalFields) * 100;
 }
 
-function displayResults(results, matchOptions) {
+function displayResults(results, matchOptions, validExtractColumns) {
+    // 結果を保存（エクスポート用）
+    lastResults = results;
+    lastValidExtractColumns = validExtractColumns;
+    
     const resultsDiv = document.getElementById('results');
     
     let html = '<h2>照合結果</h2>';
@@ -495,6 +573,11 @@ function displayResults(results, matchOptions) {
     
     html += '</div>';
     
+    // エクスポートボタンを追加
+    html += '<div class="export-section">';
+    html += '<button type="button" onclick="exportResults()">結果をCSVでエクスポート</button>';
+    html += '</div>';
+    
     html += '<table>';
     html += '<thead><tr>';
     html += '<th>ファイル②の名前</th>';
@@ -503,6 +586,12 @@ function displayResults(results, matchOptions) {
     html += '<th>一致度</th>';
     html += '<th>照合詳細</th>';
     html += '<th>ファイル①での位置</th>';
+    
+    // 抽出列のヘッダーを追加
+    validExtractColumns.forEach(col => {
+        html += `<th>${col.name}</th>`;
+    });
+    
     html += '</tr></thead>';
     html += '<tbody>';
     
@@ -588,10 +677,132 @@ function displayResults(results, matchOptions) {
         html += '</td>';
         
         html += `<td>${result.matchInfo ? `${result.matchInfo.row}行目（${result.matchInfo.lastName} ${result.matchInfo.firstName}）` : '-'}</td>`;
+        
+        // 抽出列のデータを追加
+        validExtractColumns.forEach(col => {
+            if (result.found || result.partialMatch) {
+                const extractValue = result.extractData[col.name] || '-';
+                html += `<td>${extractValue}</td>`;
+            } else {
+                html += '<td>-</td>';
+            }
+        });
+        
         html += '</tr>';
     });
     
     html += '</tbody></table>';
     
     resultsDiv.innerHTML = html;
+}
+
+// CSVエクスポート関数
+function exportResults() {
+    if (!lastResults || lastResults.length === 0) {
+        alert('エクスポートする結果がありません。');
+        return;
+    }
+    
+    // CSVヘッダーを作成
+    const headers = ['ファイル②の名前', '行番号', '結果', '一致度(%)', '照合詳細', 'ファイル①での位置'];
+    
+    // 抽出列のヘッダーを追加
+    lastValidExtractColumns.forEach(col => {
+        headers.push(col.name);
+    });
+    
+    // CSVデータを作成
+    const csvData = [headers];
+    
+    lastResults.forEach(result => {
+        const row = [];
+        
+        // 基本情報
+        row.push(result.name);
+        row.push(result.row);
+        
+        // 結果
+        if (result.found) {
+            row.push('完全一致');
+        } else if (result.partialMatch) {
+            row.push('部分一致');
+        } else {
+            row.push('不一致');
+        }
+        
+        // 一致度
+        if (result.found || result.partialMatch) {
+            row.push(Math.round(result.matchScore));
+        } else {
+            row.push('-');
+        }
+        
+        // 照合詳細
+        if (result.found || result.partialMatch) {
+            const details = [];
+            if (result.matchedFields.name) details.push('氏名:○');
+            if (result.matchedFields.kana !== undefined) {
+                details.push(result.matchedFields.kana ? 'カナ:○' : 'カナ:×');
+            }
+            if (result.matchedFields.school !== undefined) {
+                details.push(result.matchedFields.school ? '学校名:○' : '学校名:×');
+            }
+            if (result.matchedFields.birthdate !== undefined) {
+                details.push(result.matchedFields.birthdate ? '生年月日:○' : '生年月日:×');
+            }
+            if (result.matchedFields.mobile !== undefined) {
+                details.push(result.matchedFields.mobile ? '携帯:○' : '携帯:×');
+            }
+            if (result.matchedFields.email !== undefined) {
+                details.push(result.matchedFields.email ? 'メール:○' : 'メール:×');
+            }
+            row.push(details.join(' / '));
+        } else {
+            row.push('-');
+        }
+        
+        // ファイル①での位置
+        if (result.matchInfo) {
+            row.push(`${result.matchInfo.row}行目（${result.matchInfo.lastName} ${result.matchInfo.firstName}）`);
+        } else {
+            row.push('-');
+        }
+        
+        // 抽出列のデータ
+        lastValidExtractColumns.forEach(col => {
+            if (result.found || result.partialMatch) {
+                row.push(result.extractData[col.name] || '-');
+            } else {
+                row.push('-');
+            }
+        });
+        
+        csvData.push(row);
+    });
+    
+    // CSVファイルを作成
+    const csvContent = csvData.map(row => 
+        row.map(cell => {
+            // セル内の値にカンマ、改行、ダブルクォートが含まれる場合の処理
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('\n') || cellStr.includes('"')) {
+                return '"' + cellStr.replace(/"/g, '""') + '"';
+            }
+            return cellStr;
+        }).join(',')
+    ).join('\n');
+    
+    // BOMを付けてUTF-8として保存（Excelで文字化けを防ぐ）
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    // ダウンロード
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    link.download = `照合結果_${timestamp}.csv`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    
+    // メモリ解放
+    URL.revokeObjectURL(link.href);
 }

@@ -67,11 +67,19 @@
                 <h3>列の対応を指定してください</h3>
                 <div id="mappingInputs"></div>
             </div>
+            <div class="extract-columns" id="extractColumns" style="display: none;">
+                <h3>抽出する列を指定してください（最大5列）</h3>
+                <div id="extractInputs"></div>
+                <button id="addExtractColumn" type="button">列を追加</button>
+            </div>
         </div>
         
         <button id="compareBtn" disabled>照合開始</button>
         
         <div id="results" class="results-section"></div>
+        <div id="exportSection" style="display: none; text-align: center; margin-top: 20px;">
+            <button id="exportBtn" onclick="exportResults()">結果をCSVでダウンロード</button>
+        </div>
     </div>
     
     <script src="script.js"></script>

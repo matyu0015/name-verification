@@ -403,3 +403,106 @@ tbody tr:hover {
     font-size: 0.95em;
     color: #333;
 }
+
+.extract-columns {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.extract-columns h3 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.extract-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: white;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.extract-item input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1em;
+    width: 80px;
+}
+
+.extract-item input[type="text"]:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.extract-item input[type="text"]::placeholder {
+    color: #adb5bd;
+}
+
+.extract-item .column-name {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+.extract-item button {
+    padding: 5px 12px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.extract-item button:hover {
+    background-color: #c82333;
+}
+
+#addExtractColumn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95em;
+}
+
+#addExtractColumn:hover {
+    background-color: #218838;
+}
+
+#addExtractColumn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+#exportBtn {
+    padding: 12px 24px;
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#exportBtn:hover {
+    background-color: #138496;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+}

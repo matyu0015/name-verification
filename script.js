@@ -127,11 +127,12 @@ function handleFile2(e) {
 
 function checkFilesLoaded() {
     if (file1Data && file2Data) {
-        document.getElementById('compareBtn').disabled = false;
         updateColumnMapping();
         // 抽出列セクションを表示
         document.getElementById('extractColumns').style.display = 'block';
         initializeExtractColumns();
+        // ボタンを有効化（列指定後に手動で行う必要があるため、ここでは有効化しない）
+        document.getElementById('compareBtn').disabled = false;
     }
 }
 
@@ -326,8 +327,6 @@ function compareNames() {
         mobile: document.getElementById('matchMobile').checked,
         email: document.getElementById('matchEmail').checked
     };
-    
-    const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
     
     // 有効な抽出列を取得
     const validExtractColumns = extractColumns.filter(col => 

@@ -137,26 +137,20 @@ function checkFilesLoaded() {
 
 function updateColumnMapping() {
     try {
-        const needsMapping = 
-            document.getElementById('matchKana').checked ||
-            document.getElementById('matchSchool').checked ||
-            document.getElementById('matchBirthdate').checked ||
-            document.getElementById('matchMobile').checked ||
-            document.getElementById('matchEmail').checked;
-        
         const mappingDiv = document.getElementById('columnMapping');
         const mappingInputs = document.getElementById('mappingInputs');
         
         if (!mappingDiv || !mappingInputs) return;
     
-    if (needsMapping && file1Data && file2Data) {
+    // 常に列指定を表示（ファイルが読み込まれている場合）
+    if (file1Data && file2Data) {
         mappingDiv.style.display = 'block';
         
         let html = '<div class="mapping-section">';
         html += '<h4>ファイル①の列を指定（A, B, C...）</h4>';
         html += '<div class="mapping-grid">';
-        html += '<label>姓の列 (例: A): <input type="text" id="file1LastName" value="A" placeholder="A"></label>';
-        html += '<label>名の列 (例: B): <input type="text" id="file1FirstName" value="B" placeholder="B"></label>';
+        html += '<label><span style="color: red;">*</span> 姓の列 (例: A): <input type="text" id="file1LastName" value="" placeholder="A" required></label>';
+        html += '<label><span style="color: red;">*</span> 名の列 (例: B): <input type="text" id="file1FirstName" value="" placeholder="B" required></label>';
         
         if (document.getElementById('matchKana').checked) {
             html += '<label>カナ姓の列 (例: C): <input type="text" id="file1KanaLastName" placeholder="C"></label>';
@@ -183,10 +177,10 @@ function updateColumnMapping() {
         
         const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
         if (file2Format === 'combined') {
-            html += '<label>姓名の列 (例: A): <input type="text" id="file2FullName" value="A" placeholder="A"></label>';
+            html += '<label><span style="color: red;">*</span> 姓名の列 (例: A): <input type="text" id="file2FullName" value="" placeholder="A" required></label>';
         } else {
-            html += '<label>姓の列 (例: A): <input type="text" id="file2LastName" value="A" placeholder="A"></label>';
-            html += '<label>名の列 (例: B): <input type="text" id="file2FirstName" value="B" placeholder="B"></label>';
+            html += '<label><span style="color: red;">*</span> 姓の列 (例: A): <input type="text" id="file2LastName" value="" placeholder="A" required></label>';
+            html += '<label><span style="color: red;">*</span> 名の列 (例: B): <input type="text" id="file2FirstName" value="" placeholder="B" required></label>';
         }
         
         if (document.getElementById('matchKana').checked) {
@@ -226,17 +220,17 @@ function getColumnMappings() {
     
     const mapping = {
         file1: {
-            lastName: columnToNumber(document.getElementById('file1LastName')?.value || 'A') - 1,
-            firstName: columnToNumber(document.getElementById('file1FirstName')?.value || 'B') - 1
+            lastName: document.getElementById('file1LastName')?.value ? columnToNumber(document.getElementById('file1LastName').value) - 1 : null,
+            firstName: document.getElementById('file1FirstName')?.value ? columnToNumber(document.getElementById('file1FirstName').value) - 1 : null
         },
         file2: {}
     };
     
     if (file2Format === 'combined') {
-        mapping.file2.fullName = columnToNumber(document.getElementById('file2FullName')?.value || 'A') - 1;
+        mapping.file2.fullName = document.getElementById('file2FullName')?.value ? columnToNumber(document.getElementById('file2FullName').value) - 1 : null;
     } else {
-        mapping.file2.lastName = columnToNumber(document.getElementById('file2LastName')?.value || 'A') - 1;
-        mapping.file2.firstName = columnToNumber(document.getElementById('file2FirstName')?.value || 'B') - 1;
+        mapping.file2.lastName = document.getElementById('file2LastName')?.value ? columnToNumber(document.getElementById('file2LastName').value) - 1 : null;
+        mapping.file2.firstName = document.getElementById('file2FirstName')?.value ? columnToNumber(document.getElementById('file2FirstName').value) - 1 : null;
     }
     
     if (document.getElementById('matchKana').checked) {
@@ -305,6 +299,22 @@ function normalizeBirthdate(date) {
 
 function compareNames() {
     const mapping = getColumnMappings();
+    
+    // 氏名列が指定されているかチェック
+    if (mapping.file1.lastName === null || mapping.file1.firstName === null) {
+        alert('ファイル①の姓名の列を指定してください');
+        return;
+    }
+    
+    const file2Format = document.querySelector('input[name="file2Format"]:checked').value;
+    if (file2Format === 'combined' && mapping.file2.fullName === null) {
+        alert('ファイル②の姓名の列を指定してください');
+        return;
+    } else if (file2Format !== 'combined' && (mapping.file2.lastName === null || mapping.file2.firstName === null)) {
+        alert('ファイル②の姓名の列を指定してください');
+        return;
+    }
+    
     const results = [];
     const file1Records = new Map();
     
